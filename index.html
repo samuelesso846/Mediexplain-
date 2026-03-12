@@ -308,6 +308,12 @@
       }
     } catch(e) {}
   };
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // Connexion à ton projet
+  const SUPABASE_URL = 'https://vkhwtqoggrofqexiidyk.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_T2htUS5oVm5uu5Te-8hdrQ'; 
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   function setLang(btn, lang) {
     document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
@@ -317,7 +323,7 @@
 
   async function analyzeReport() {
     const text = document.getElementById('reportText').value.trim();
-    if (!text) { alert("Veuillez coller votre rapport médical avant d'analyser."); return; }
+    if (!text) { alert("Veuillez coller votre rapport médical."); return; }
 
     const btn = document.getElementById('analyzeBtn');
     const loader = document.getElementById('loader');
@@ -328,28 +334,32 @@
     loader.classList.add('active');
     resultCard.classList.remove('active');
 
-    const langMap = { fr: 'français', en: 'anglais', ewe: 'Éwé (langue du Togo)', ar: 'arabe', pt: 'portugais brésilien' };
-
-    const prompt = `Tu es un assistant médical pédagogique. Un patient t'envoie son rapport médical. Explique en langage simple en ${langMap[selectedLang]}, sans jargon médical.
-
-Structure ta réponse :
-1. 📋 Résumé général (2-3 phrases simples)
-2. 🔍 Ce que signifie chaque valeur
-3. ✅ Points normaux
-4. ⚠️ Points qui méritent attention (si applicable)
-5. 💡 Conseil : consulter un médecin pour confirmation
-
-Rapport du patient :
-${text}`;
-
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          messages: [{ role: "user", content: prompt }]
-        })
+      const { data, error } = await supabaseClient.functions.invoke('analyser-rapport', {
+        body: { text: text, lang: selectedLang }
       });
- 
+      if (error) throw error;
+      resultBody.innerText = data.explication;
+      resultCard.classList.add('active');
+    } catch (err) {
+      alert("Site connecté ! On active l'IA sur Supabase maintenant.");
+    } finally {
+      btn.disabled = false;
+      loader.classList.remove('active');
+    }
+  }
+
+  window.onload = function() {
+    try {
+      const saved = localStorage.getItem('mediexplain_consent');
+      if (saved) {
+        document.getElementById('consentModal').classList.add('hidden');
+        document.getElementById('app').classList.add('visible');
+      }
+    } catch(e) {}
+  };
+</script>
+</body>
+</html>
+
+  
